@@ -1,0 +1,10 @@
+     66 crouching
+     12 _DEFAULT
+      9 jumping
+     27 kneeling
+     39 laying
+     18 leaning
+    117 sitting
+    504 standing
+    135 T_pose
+    396 walking
