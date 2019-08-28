@@ -48,7 +48,9 @@ with open('via_latest.json') as json_file:
 		pair.append([data['metadata'][i]['vid'], vid_idx2actor(data['metadata'][i]['vid'], data).strip('S'), data['metadata'][i]['av']['1'], int(timestamp_pair2frame_pair(data['metadata'][i]['z'])[0]), int(timestamp_pair2frame_pair(data['metadata'][i]['z'])[1])])
 	#print(pair)
 
+
 label_dict = label2int(label)
+print(label_dict)
 dict_label = swipe_dict(label_dict)
 
 video = {}
