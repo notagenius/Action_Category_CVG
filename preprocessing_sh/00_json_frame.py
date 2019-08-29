@@ -98,6 +98,8 @@ with open('via_latest.json') as json_file:
 label_dict = label2int(label)
 dict_label = swipe_dict(label_dict)
 
+print(label_dict)
+
 video = {}
 
 
