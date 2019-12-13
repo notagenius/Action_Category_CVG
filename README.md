@@ -7,9 +7,12 @@ Visulization
 - [ ] Accuracy curve
 
 Model Candidates
-- [ ] TCN
-- [ ] RNN
-- [ ] Fully Connected Layer with 
+- [ ] LSTM / GRU 25 frames * 2 sample rate 
+- [ ] TCN Non Causal largest I can fit, it is fully conventional
+- [ ] TCN Causal 
+- [ ] Bi-Directional RNN 
+all models take the most simple structure no drop out
+- [ ] Fully Connected Layer
 
 Evaluation Metrics
 - [ ] Cross-Validation
