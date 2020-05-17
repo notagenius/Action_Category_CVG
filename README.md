@@ -11,7 +11,7 @@ Visulization
 - [x] Accuracy curve
 
 Model Candidates
-- [ ] LSTM / GRU 25 frames * 2 sample rate 
+- [x] LSTM / GRU 25 frames * 2 sample rate 
 - [ ] TCN Non Causal largest I can fit, it is fully conventional
 - [ ] TCN Causal 
 - [ ] Bi-Directional RNN 
