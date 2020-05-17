@@ -22,14 +22,17 @@ import pandas as pd
 
 def parse_command_line():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--net', type=str, default='pose', help='task to be trained')
-    parser.add_argument('-r', '--runs', type=str, default='test/baseline-001', help='tensorboard location')
+    parser.add_argument('-n', '--net', type=str, default='FCL', help='task to be trained')
+    parser.add_argument('-r', '--runs', type=str, default='test/baseline-FCL', help='tensorboard location')
     parser.add_argument('-b', '--batchsize', type=int, default=64, help='batchsize')
-    #parser.add_argument('-l', '--force_learning_rate', type=float, default=-1.0, help='setting learning rate')
+    parser.add_argument('-l', '--force_learning_rate', type=float, default=0.000005, help='setting learning rate')
     args = parser.parse_args()
     return args
 
-params = { 'batch_size': 64, 'shuffle': True, 'num_workers': 10, 'drop_last': True}
+opt = parse_command_line()
+writer = SummaryWriter(opt.runs)
+params = { 'batch_size': opt.batchsize, 'shuffle': True, 'num_workers': 10, 'drop_last': True}
+learning_rate = opt.force_learning_rate
 
 
 def default_loader(csv_path_folder, npy_path_folder):
@@ -109,9 +112,20 @@ class my_dataset(Dataset):
     def __getitem__(self, index):
         return np.concatenate(self.npy_conbined_inputs[index]),self.csv_conbined_df[index].argmax(axis=0)
 
-class FCL_no_activate(nn.Module):
+class FCL(nn.Module):
+    def __init__(self, input_size, num_classes):
+        super(FCL, self).__init__()
+        self.fc1 = nn.Linear(input_size, num_classes)
+
+
+    def forward(self, x):
+        out = self.fc1(x)
+
+        return out
+
+class FCL_1(nn.Module):
     def __init__(self, input_size, hidden_size, num_classes):
-        super(FCL_no_activate, self).__init__()
+        super(FCL_1, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, num_classes)
 
@@ -120,9 +134,9 @@ class FCL_no_activate(nn.Module):
         out = self.fc2(out)
         return out
 
-class FCL(nn.Module):
+class FCL_1_relu(nn.Module):
     def __init__(self, input_size, hidden_size, num_classes):
-        super(FCL, self).__init__()
+        super(FCL_1_relu, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_size, num_classes)
@@ -133,9 +147,9 @@ class FCL(nn.Module):
         out = self.fc2(out)
         return out
 
-class simple_FCN(nn.Module):
+class FCL_2(nn.Module):
     def __init__(self, in_dim, n_hidden_1, n_hidden_2, out_dim):
-        super(simple_FCN, self).__init__()
+        super(FCL_2, self).__init__()
         self.layer1 = nn.Linear(in_dim, n_hidden_1)
         self.layer2 = nn.Linear(n_hidden_1, n_hidden_2)
         self.layer3 = nn.Linear(n_hidden_2, out_dim)
@@ -147,9 +161,9 @@ class simple_FCN(nn.Module):
         return x
 
 
-class Activation_FCN(nn.Module):
+class FCL_2_relu(nn.Module):
     def __init__(self, in_dim, n_hidden_1, n_hidden_2, out_dim):
-        super(Activation_FCN, self).__init__()
+        super(FCN_2_relu, self).__init__()
         self.layer1 = nn.Sequential(nn.Linear(in_dim, n_hidden_1), nn.ReLU(True))
         self.layer2 = nn.Sequential(nn.Linear(n_hidden_1, n_hidden_2), nn.ReLU(True))
         self.layer3 = nn.Sequential(nn.Linear(n_hidden_2, out_dim))
@@ -160,9 +174,9 @@ class Activation_FCN(nn.Module):
         x = self.layer3(x)
         return x
 
-class Batch_FCN(nn.Module):
+class FCL_3_bn(nn.Module):
     def __init__(self, in_dim, n_hidden_1, n_hidden_2, out_dim):
-        super(Batch_FCN, self).__init__()
+        super(FCL_3_bn, self).__init__()
         self.layer1 = nn.Sequential(nn.Linear(in_dim, n_hidden_1), nn.BatchNorm1d(n_hidden_1), nn.ReLU(True))
         self.layer2 = nn.Sequential(nn.Linear(n_hidden_1, n_hidden_2), nn.BatchNorm1d(n_hidden_2), nn.ReLU(True))
         self.layer3 = nn.Sequential(nn.Linear(n_hidden_2, out_dim))
@@ -179,125 +193,123 @@ def cross_entropy_one_hot(input, target):
 
 if __name__ == "__main__":
 
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda:0" if use_cuda else "cpu")
-    print(use_cuda)
+    with open(opt.net+'.txt', 'w') as f:
 
-    opt = parse_command_line()
-    writer = SummaryWriter(opt.runs)
+        use_cuda = torch.cuda.is_available()
+        device = torch.device("cuda:0" if use_cuda else "cpu")
+        print(use_cuda)
 
-
-    max_epochs = 100
-
-    csv_path = {'train':"../00_datasets/Julian_data/label_not5/S*.txt", 'val':"../00_datasets/Julian_data/label_5/S*.txt"}
-    npy_path = {'train':"../00_datasets/Weiling_data/pose_not5/S*.npy",'val':"../00_datasets/Weiling_data/pose_5/S*.npy"}
-
-    #csv_path = {'val':"../00_datasets/Weiling_data/label_not5/S*.csv", 'train':"../00_datasets/Weiling_data/label_5/S*.csv"}
-    #npy_path = {'val':"../00_datasets/Weiling_data/pose_not5/S*.npy",'train':"../00_datasets/Weiling_data/pose_5/S*.npy"}
+        
 
 
-    training_set = my_dataset(csv_path['train'], npy_path['train'])
-    training_generator = DataLoader(training_set, **params)
+        max_epochs = 100
 
-    validation_set = my_dataset(csv_path['val'], npy_path['val'])
-    validation_generator = DataLoader(validation_set, **params) 
+        csv_path = {'train':"../00_datasets/Julian_data/label_not5/S*.txt", 'val':"../00_datasets/Julian_data/label_5/S*.txt"}
+        npy_path = {'train':"../00_datasets/Weiling_data/pose_not5/S*.npy",'val':"../00_datasets/Weiling_data/pose_5/S*.npy"}
 
-    need_print = True
-    need_print_tail = True
+        #csv_path = {'val':"../00_datasets/Weiling_data/label_not5/S*.csv", 'train':"../00_datasets/Weiling_data/label_5/S*.csv"}
+        #npy_path = {'val':"../00_datasets/Weiling_data/pose_not5/S*.npy",'train':"../00_datasets/Weiling_data/pose_5/S*.npy"}
 
-    batch_size = params['batch_size']
-    input_size = 32 * 3 
-    hidden_size = 512 
-    num_classes = 11
-    num_epochs = 1
-    total_step = 200
-    
-    learning_rate = 0.00001
-    #model = FCL(input_size, hidden_size, num_classes).to(device)
-    model = Activation_FCN(input_size, hidden_size, hidden_size*2, num_classes).to(device)
-    #model = FCL_no_activate(input_size, hidden_size, num_classes).to(device)
-    criterion = nn.CrossEntropyLoss()
-    #criterion = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 
-    best_accu = 0
-    for epoch in range(max_epochs):
-        # Training
-        i = 0
-        for skeleton, label in training_generator:
-            skeleton, label = skeleton.to(device), label.to(device)
-            #skeletons = skeleton.reshape(-1, 32 * 3 * batch_size).to(device)
-            #skeletons= skeleton.flatten().to(device)
-            #_, targets = label.max(dim=1)
-            #labels = targets
-            #labels = labels.flatten().long().to(device)
-            #labels = labels.reshape(-1, 1 * batch_size).long().to(device)
-            #labels = label.flatten().to(device)
-            #print(label)
-            outputs = model(skeleton)            
-            
-            
-            loss = criterion(outputs,label)
+        training_set = my_dataset(csv_path['train'], npy_path['train'])
+        training_generator = DataLoader(training_set, **params)
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+        validation_set = my_dataset(csv_path['val'], npy_path['val'])
+        validation_generator = DataLoader(validation_set, **params) 
 
-            if (i+1) % 100 == 0:
-                writer.add_scalar('Train/Loss', loss.item(), global_step=epoch)
-                #print('Epoch [{}/{}], Step [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(i+1), str(total_step), str(loss.item())))
-                #print('Epoch [{}/{}], Step [{}/{}], Loss: '.format(str(epoch + 1), str(max_epochs), str(i+1), str(total_step)))
-            if need_print == True and epoch == 0:
-                print("Traing: head of each epoch")
-                print(skeleton.size())
-                print(label.size())
-                need_print = False
-            i = i+1
-        if need_print_tail == True and epoch == 0:        
-            print("Traing: tail of each epoch")
-            print(skeleton.size())
-            print(label.size())
-            need_print_tail = False
+        need_print = True
+        need_print_tail = True
 
-        #Validation
-        with torch.set_grad_enabled(False):
-            correct = 0
-            total = 0
-            need_print = True
-            need_print_tail = True
-            for skeleton_val, label_val in validation_generator:
-                skeleton, label = skeleton_val.to(device), label_val.to(device)
+        batch_size = params['batch_size']
+        input_size = 32 * 3 
+        hidden_size = 512 
+        num_classes = 11
+        total_step = 6693
+        
+        if opt.net == "FCL":
+            model = FCL(input_size, num_classes).to(device)
+        elif opt.net == "FCL_1":
+            model = FCL_1(input_size, hidden_size, num_classes).to(device)
+        elif opt.net == "FCL_1_relu":
+            model = FCL_1_relu(input_size, hidden_size, num_classes).to(device)
+        elif opt.net == "FCL_2":
+            model = FCL_2(input_size, hidden_size, input_size, num_classes).to(device)
+        elif opt.net == "FCL_2_relu":
+            model = FCL_2_relu(input_size, hidden_size, input_size, num_classes).to(device)
+        elif opt.net == "FCL_3_bn":
+            model == FCL_3_bn(input_size, hidden_size, input_size, num_classes).to(device)
+
+        criterion = nn.CrossEntropyLoss()
+        #criterion = nn.BCEWithLogitsLoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+
+        best_accu = 0
+        for epoch in range(max_epochs):
+            # Training
+            i = 0
+            for skeleton, label in training_generator:
+                skeleton, label = skeleton.to(device), label.to(device)
+                #skeletons = skeleton.reshape(-1, 32 * 3 * batch_size).to(device)
+                #skeletons= skeleton.flatten().to(device)
+                #_, targets = label.max(dim=1)
+                #labels = targets
+                #labels = labels.flatten().long().to(device)
+                #labels = labels.reshape(-1, 1 * batch_size).long().to(device)
+                #labels = label.flatten().to(device)
+                #print(label)
                 outputs = model(skeleton)            
-
-                _, predicted = torch.max(outputs.data, 1)
+                
+                
                 loss = criterion(outputs,label)
-                total += label.size(0)
-                correct += (predicted == label).sum().item()                
-                if need_print == True and epoch == 0:
-                    print("Validation: head of each epoch")
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                if (i+1) % 100 == 0:
+                    writer.add_scalar('Train/Loss', loss.item(), global_step=epoch)
+                    print('Train Epoch [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(loss.item())),file=f)
+                i = i+1
+
+            #Validation
+            with torch.set_grad_enabled(False):
+                correct = 0
+                total = 0
+                need_print = True
+                need_print_tail = True
+                for skeleton_val, label_val in validation_generator:
+                    skeleton, label = skeleton_val.to(device), label_val.to(device)
+                    outputs = model(skeleton)            
+
+                    _, predicted = torch.max(outputs.data, 1)
+                    loss = criterion(outputs,label)
+                    total += label.size(0)
+                    correct += (predicted == label).sum().item()                
+                    if need_print == True and epoch == 0:
+                        print("Validation: head of each epoch")
+                        print(skeleton_val.size())
+                        print(label_val.size())
+                        need_print = False
+                if need_print_tail == True and epoch == 0:   
+                    print("Validation: tail of each epoch")
                     print(skeleton_val.size())
                     print(label_val.size())
-                    need_print = False
-            if need_print_tail == True and epoch == 0:   
-                print("Validation: tail of each epoch")
-                print(skeleton_val.size())
-                print(label_val.size())
-                need_print_tail = False
-            
-            print('Epoch [{}/{}], Step [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(i+1), str(total_step), str(loss.item())))
-            print('Accuracy of the network on the S5 actor: {}%'.format(100 * correct / total))
-            if correct > best_accu:
-                PATH = "/media/data/weiling/Action_Category_CVG/model/"+"best.pth"
-                torch.save(model.state_dict(), PATH)
-                best_accu = correct
-                print(correct)
-                print("saved!")
-            writer.add_scalar('Test/Accuracy', 100 * correct / total, epoch)
+                    need_print_tail = False
+                writer.add_scalar('Test/Loss', loss.item(), global_step=epoch)
+                print('Test Epoch [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(loss.item())),file=f)
+                print('Test Accuracy: {}%'.format(100 * correct / total), file=f)
+                if correct > best_accu:
+                    PATH = "/media/data/weiling/Action_Category_CVG/model/"+opt.net+"best.pth"
+                    torch.save(model.state_dict(), PATH)
+                    best_accu = correct
+                    print(correct)
+                    print("saved!")
+                writer.add_scalar('Test/Accuracy', 100 * correct / total, epoch)
 
-            writer.flush()
-    
+                writer.flush()
+        f.close()
+        
 
-    #model = FCL_no_activate(input_size, hidden_size, num_classes).to(device)
 
 
 
