@@ -88,3 +88,5 @@ ax.set_yticks(yticks)
 ax.set_title(res_label_d)
 
 plt.show()
+
+plt.savefig('3d.eps', format='eps')

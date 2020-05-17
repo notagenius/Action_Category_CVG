@@ -97,4 +97,4 @@ plt.legend()
 plt.show()
 
 
-plt.show()	
+plt.savefig('2d.eps', format='eps')
