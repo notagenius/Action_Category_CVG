@@ -27,7 +27,8 @@ to make the parameter number the same
 
 ### find out where it fails and why and give a solution
 
-csv to HDF5
-http://docs.h5py.org/en/latest/
+csv to HDF5 http://docs.h5py.org/en/latest/
+
 refer: https://discuss.pytorch.org/t/how-to-speed-up-the-data-loader/13740/2
+
 refer  LMDB (Lightning Memory-mapped Database)
