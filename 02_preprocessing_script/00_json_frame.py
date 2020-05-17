@@ -23,7 +23,7 @@ def vid_idx2filename(vid_idx, data):
 	return filename
 
 def read_frame_nr_of_pose3d(csvfile):
-	gt_3d = np.load('./pose3d/'+csvfile[:-3]+"npy")
+	gt_3d = np.load('../00_datasets/pose3d/'+csvfile[:-3]+"npy")
 	return gt_3d.shape[0]
 
 def timestamp2frame(time_stamp):
