@@ -1,6 +1,9 @@
 ### NOTES
 
 ![](https://raw.githubusercontent.com/notagenius/Action_Category_CVG/master/model_tips.jpg?token=AGSPNMZSFEZD4NICGXVOBZS57TVYU)
+### Dataset Visualization
+- TSNE
+
 ### Future Checklist:
 Visulization
 - [ ] Confusion Matrix
