@@ -23,8 +23,10 @@ import pandas as pd
 def parse_command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--net', type=str, default='FCL', help='task to be trained')
+    parser.add_argument('-f', '--file', type=str, default='FCL', help='tensorboard location')
     parser.add_argument('-r', '--runs', type=str, default='test/baseline-FCL', help='tensorboard location')
     parser.add_argument('-b', '--batchsize', type=int, default=64, help='batchsize')
+    parser.add_argument('-m', '--max', type=int, default=200, help='batchsize')
     parser.add_argument('-l', '--force_learning_rate', type=float, default=0.000005, help='setting learning rate')
     args = parser.parse_args()
     return args
@@ -147,6 +149,17 @@ class FCL_1_relu(nn.Module):
         out = self.fc2(out)
         return out
 
+class FCL_1_bn(nn.Module):
+    def __init__(self, in_dim, n_hidden_1, out_dim):
+        super(FCL_1_bn, self).__init__()
+        self.layer1 = nn.Sequential(nn.Linear(in_dim, n_hidden_1), nn.BatchNorm1d(n_hidden_1), nn.ReLU(True))
+        self.layer2 = nn.Sequential(nn.Linear(n_hidden_1, out_dim))
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        return x
+
 class FCL_2(nn.Module):
     def __init__(self, in_dim, n_hidden_1, n_hidden_2, out_dim):
         super(FCL_2, self).__init__()
@@ -163,7 +176,7 @@ class FCL_2(nn.Module):
 
 class FCL_2_relu(nn.Module):
     def __init__(self, in_dim, n_hidden_1, n_hidden_2, out_dim):
-        super(FCN_2_relu, self).__init__()
+        super(FCL_2_relu, self).__init__()
         self.layer1 = nn.Sequential(nn.Linear(in_dim, n_hidden_1), nn.ReLU(True))
         self.layer2 = nn.Sequential(nn.Linear(n_hidden_1, n_hidden_2), nn.ReLU(True))
         self.layer3 = nn.Sequential(nn.Linear(n_hidden_2, out_dim))
@@ -174,9 +187,9 @@ class FCL_2_relu(nn.Module):
         x = self.layer3(x)
         return x
 
-class FCL_3_bn(nn.Module):
+class FCL_2_bn(nn.Module):
     def __init__(self, in_dim, n_hidden_1, n_hidden_2, out_dim):
-        super(FCL_3_bn, self).__init__()
+        super(FCL_2_bn, self).__init__()
         self.layer1 = nn.Sequential(nn.Linear(in_dim, n_hidden_1), nn.BatchNorm1d(n_hidden_1), nn.ReLU(True))
         self.layer2 = nn.Sequential(nn.Linear(n_hidden_1, n_hidden_2), nn.BatchNorm1d(n_hidden_2), nn.ReLU(True))
         self.layer3 = nn.Sequential(nn.Linear(n_hidden_2, out_dim))
@@ -193,7 +206,7 @@ def cross_entropy_one_hot(input, target):
 
 if __name__ == "__main__":
 
-    with open(opt.net+'.txt', 'w') as f:
+    with open(opt.file+'.txt', 'w') as f:
 
         use_cuda = torch.cuda.is_available()
         device = torch.device("cuda:0" if use_cuda else "cpu")
@@ -202,7 +215,7 @@ if __name__ == "__main__":
         
 
 
-        max_epochs = 100
+        max_epochs = opt.max
 
         csv_path = {'train':"../00_datasets/Julian_data/label_not5/S*.txt", 'val':"../00_datasets/Julian_data/label_5/S*.txt"}
         npy_path = {'train':"../00_datasets/Weiling_data/pose_not5/S*.npy",'val':"../00_datasets/Weiling_data/pose_5/S*.npy"}
@@ -232,12 +245,14 @@ if __name__ == "__main__":
             model = FCL_1(input_size, hidden_size, num_classes).to(device)
         elif opt.net == "FCL_1_relu":
             model = FCL_1_relu(input_size, hidden_size, num_classes).to(device)
+        elif opt.net == "FCL_1_bn":
+            model = FCL_1_bn(input_size, hidden_size, num_classes).to(device)
         elif opt.net == "FCL_2":
             model = FCL_2(input_size, hidden_size, input_size, num_classes).to(device)
         elif opt.net == "FCL_2_relu":
             model = FCL_2_relu(input_size, hidden_size, input_size, num_classes).to(device)
-        elif opt.net == "FCL_3_bn":
-            model == FCL_3_bn(input_size, hidden_size, input_size, num_classes).to(device)
+        elif opt.net == "FCL_2_bn":
+            model = FCL_2_bn(input_size, hidden_size, input_size, num_classes).to(device)
 
         criterion = nn.CrossEntropyLoss()
         #criterion = nn.BCEWithLogitsLoss()
@@ -299,7 +314,7 @@ if __name__ == "__main__":
                 print('Test Epoch [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(loss.item())),file=f)
                 print('Test Accuracy: {}%'.format(100 * correct / total), file=f)
                 if correct > best_accu:
-                    PATH = "/media/data/weiling/Action_Category_CVG/model/"+opt.net+"best.pth"
+                    PATH = "../model/"+opt.file+"best.pth"
                     torch.save(model.state_dict(), PATH)
                     best_accu = correct
                     print(correct)
