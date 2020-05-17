@@ -22,10 +22,10 @@ Evaluation Metrics
 - [ ] Cross-Validation
 - [ ] S5 Only
 
-### even the Parameters 
+### Even The Parameters 
 to make the parameter number the same
 
-### find out where it fails and why and give a solution
+### Find Out Where It Fails And Why and Give It A Solution
 
 csv to HDF5 http://docs.h5py.org/en/latest/
 
