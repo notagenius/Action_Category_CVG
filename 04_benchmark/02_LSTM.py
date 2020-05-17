@@ -70,7 +70,6 @@ class my_dataset(Dataset):
                 self.csv_result.append(tmp_list[-1])
         self.csv_conbined_df = np.concatenate(self.csv_list_of_dfs)
         self.csv_torch_tensor = torch.tensor(self.csv_conbined_df)
-        #print(len(self.csv_result))
         print(self.csv_result[1])
 
         # npy
@@ -112,15 +111,10 @@ class simpleLSTM(nn.Module):
         self.fc = nn.Linear(hidden_size, num_classes)
 
     def forward(self, x):
-        # x shape (batch, time_step, input_size)
-        # out shape (batch, time_step, output_size)
-        # h_n shape (n_layers, batch, hidden_size)
-        # h_c shape (n_layers, batch, hidden_size)
-        # 初始化hidden和memory cell参数
+
         h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
         c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
 
-        # forward propagate lstm
         out, (h_n, h_c) = self.lstm(x, (h0, c0))
 
         out = self.fc(out[:, -1, :])
@@ -159,24 +153,20 @@ if __name__ == "__main__":
         learning_rate = opt.force_learning_rate
 
         model = simpleLSTM(input_size, hidden_size, num_layers, output_size)
-
-
         model.to(device)
+
+
+        
         criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 
         sum_done = False
         for epoch in range(max_epochs):
-            # Training
             model.train()
             for i, (skeleton, label) in enumerate(training_generator):
-                if sum_done == False:
-                    summary(model, skeleton)
-                    sum_done = True
 
                 skeleton = skeleton.reshape(-1, time_step, input_size).to(device)
                 label = label.to(device)
-                #print(label)
 
                 outputs = model(skeleton)               
                 
@@ -191,7 +181,6 @@ if __name__ == "__main__":
                     print('Train Epoch [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(loss.item())),file=f)
 
             model.eval()
-            #Validation
             with torch.set_grad_enabled(False):
                 correct = 0
                 total = 0

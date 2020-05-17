@@ -19,12 +19,13 @@ import glob
 from tensorboardX import SummaryWriter
 import pandas as pd
 from torchsummary import summary
+from tcn import TemporalConvNet
 
 def parse_command_line():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--net', type=str, default='simpleLSTM', help='task to be trained')
-    parser.add_argument('-f', '--file', type=str, default='simpleLSTM', help='tensorboard location')
-    parser.add_argument('-r', '--runs', type=str, default='test/simpleLSTM', help='tensorboard location')
+    parser.add_argument('-n', '--net', type=str, default='TCN', help='task to be trained')
+    parser.add_argument('-f', '--file', type=str, default='TCN', help='tensorboard location')
+    parser.add_argument('-r', '--runs', type=str, default='test/TCN', help='tensorboard location')
     parser.add_argument('-b', '--batchsize', type=int, default=64, help='batchsize')
     parser.add_argument('-m', '--max', type=int, default=200, help='batchsize')
     parser.add_argument('-l', '--force_learning_rate', type=float, default=0.00001, help='setting learning rate')
@@ -36,7 +37,7 @@ writer = SummaryWriter(opt.runs)
 params = { 'batch_size': opt.batchsize, 'shuffle': True, 'num_workers': 10, 'drop_last': True}
 learning_rate = opt.force_learning_rate
 
-data = {'Data_hz': 2, 'Frame_len': 25}
+data = {'Data_hz': 2, 'Frame_len': 2}
 
 def default_loader(csv_path_folder, npy_path_folder):
     return
@@ -67,7 +68,7 @@ class my_dataset(Dataset):
                 tmp_list=[]
                 for k in range(self.frame_len):
                     tmp_list.append(i[j+k*self.data_hz].argmax(axis=0))
-                self.csv_result.append(tmp_list[-1])
+                self.csv_result.append(tmp_list)
         self.csv_conbined_df = np.concatenate(self.csv_list_of_dfs)
         self.csv_torch_tensor = torch.tensor(self.csv_conbined_df)
         #print(len(self.csv_result))
@@ -103,29 +104,19 @@ class my_dataset(Dataset):
     def __getitem__(self, index):
         return np.asarray(self.npy_result[index]),np.asarray(self.csv_result[index])
 
-class simpleLSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes):
-        super(simpleLSTM, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size, num_classes)
 
-    def forward(self, x):
-        # x shape (batch, time_step, input_size)
-        # out shape (batch, time_step, output_size)
-        # h_n shape (n_layers, batch, hidden_size)
-        # h_c shape (n_layers, batch, hidden_size)
-        # 初始化hidden和memory cell参数
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+class TCN(nn.Module):
+    def __init__(self, input_size, output_size, num_channels, kernel_size, dropout):
+        super(TCN, self).__init__()
+        self.tcn = TemporalConvNet(input_size, num_channels, kernel_size=kernel_size, dropout=dropout)
+        self.linear = nn.Linear(num_channels[-1], output_size)
 
-        # forward propagate lstm
-        out, (h_n, h_c) = self.lstm(x, (h0, c0))
-
-        out = self.fc(out[:, -1, :])
-        return out
-
+    def forward(self, inputs):
+        """Inputs have to have dimension (N, C_in, L_in)"""
+        y1 = self.tcn(inputs)  # input should have dimension (N, C, L)
+        o = self.linear(y1)
+        #return F.log_softmax(o, dim=1)
+        return o
 
 if __name__ == "__main__":
     with open(opt.file+'.txt', 'w') as f:
@@ -149,16 +140,15 @@ if __name__ == "__main__":
         need_print_tail = True
 
         batch_size = params['batch_size']
-        time_step = data['Frame_len']
-        input_size = 32 * 3  
-        hidden_size = 64
-        num_layers = 1
-        output_size = 11
+        n_classes = 10
+        input_channels = 3*32
+        seq_length = data['Frame_len']
         total_step = len(training_set)
         
         learning_rate = opt.force_learning_rate
 
-        model = simpleLSTM(input_size, hidden_size, num_layers, output_size)
+        #model = simpleLSTM(input_size, hidden_size, num_layers, output_size)
+        model = TCN(input_channels, n_classes, [25] * 8, kernel_size=7, dropout=0.00)
 
 
         model.to(device)
@@ -170,17 +160,14 @@ if __name__ == "__main__":
             # Training
             model.train()
             for i, (skeleton, label) in enumerate(training_generator):
-                if sum_done == False:
-                    summary(model, skeleton)
-                    sum_done = True
 
-                skeleton = skeleton.reshape(-1, time_step, input_size).to(device)
+                skeleton = skeleton.reshape(-1,input_channels,seq_length).to(device)
                 label = label.to(device)
-                #print(label)
+                print(skeleton.size())
 
-                outputs = model(skeleton)               
-                
-                loss = criterion(outputs,label)
+                outputs = model(skeleton)
+
+                loss = criterion(outputs.view(-1, n_classes),label.view(-1))
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -200,8 +187,8 @@ if __name__ == "__main__":
                     label_val = label_val.to(device)
                 
                     outputs = model(skeleton_val)
-                    _, predicted = torch.max(outputs.data, 1)
-                    total += label_val.size(0)
+                    _, predicted = torch.max(outputs.data, 2)
+                    total += label_val.size(0) * label_val.size(1)
                     correct += (predicted == label_val).sum().item()
                     
                     if need_print == True and epoch == 0:
