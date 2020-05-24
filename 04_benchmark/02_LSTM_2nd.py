@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+from finalsummy import torch_summarize
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -13,12 +14,21 @@ import time
 import os
 import copy
 import numpy as np
+from torch.nn.modules.module import _addindent
 from torch import nn
 import argparse
 import glob
 from tensorboardX import SummaryWriter
 import pandas as pd
 from torchsummary import summary
+from finalsummy import torch_summarize
+import numpy as np
+import matplotlib.pylab as plt
+from mpl_toolkits.mplot3d import Axes3D
+import json
+import matplotlib.animation as animation
+import sys
+
 
 def parse_command_line():
     parser = argparse.ArgumentParser()
@@ -31,12 +41,21 @@ def parse_command_line():
     args = parser.parse_args()
     return args
 
+def get_n_params(model):
+    pp=0
+    for p in list(model.parameters()):
+        nn=1
+        for s in list(p.size()):
+            nn = nn*s
+        pp += nn
+    return pp
+
 opt = parse_command_line()
 writer = SummaryWriter(opt.runs)
 params = { 'batch_size': opt.batchsize, 'shuffle': True, 'num_workers': 10, 'drop_last': True}
 learning_rate = opt.force_learning_rate
 
-data = {'Data_hz': 2, 'Frame_len': 25}
+data = {'Data_hz': 2, 'Frame_len': 100}
 
 def default_loader(csv_path_folder, npy_path_folder):
     return
@@ -45,6 +64,7 @@ def get_filename_type(file):
     filename = file.split("/")[-1].split('.')[:-1]
     file_type = file.split("/")[-1].split('.')[-1]
     return filename, file_type
+
 
 class my_dataset(Dataset):
     def __init__(self, csv_path_folder, npy_path_folder, data_hz, frame_len):
@@ -70,7 +90,7 @@ class my_dataset(Dataset):
                 self.csv_result.append(tmp_list)
         self.csv_conbined_df = np.concatenate(self.csv_list_of_dfs)
         self.csv_torch_tensor = torch.tensor(self.csv_conbined_df)
-        print(self.csv_result[1])
+
 
         # npy
         self.npy_filenames = sorted(glob.glob(npy_path_folder))
@@ -93,9 +113,7 @@ class my_dataset(Dataset):
         self.npy_conbined_inputs = np.concatenate(self.npy_list_of_frames, axis=0, out=None)
         self.npy_torch_tensor = torch.tensor(self.npy_conbined_inputs)
         
-        print("length of input skeleton is:"+str(len(self.npy_conbined_inputs))+" mod of batch size is:"+str(len(self.npy_conbined_inputs)%params['batch_size']))
-        print("length of input label is:"+str(len(self.csv_conbined_df))+" mod of batch size is:"+str(len(self.csv_conbined_df)%params['batch_size']))
-
+    
     def __len__(self):
         return len(self.csv_result)
 
@@ -131,7 +149,7 @@ if __name__ == "__main__":
 
         max_epochs = opt.max
 
-        csv_path = {'train':"../00_datasets/Julian_data/label_not5/S*.txt", 'val':"../00_datasets/Julian_data/label_5/S*.txt"}
+        csv_path = {'train':"../00_datasets/Weiling_data/label_not5/S*.csv", 'val':"../00_datasets/Weiling_data/label_5/S*.csv"}
         npy_path = {'train':"../00_datasets/Weiling_data/pose_not5/S*.npy",'val':"../00_datasets/Weiling_data/pose_5/S*.npy"}
 
         training_set = my_dataset(csv_path['train'], npy_path['train'], data['Data_hz'],data['Frame_len'])
@@ -148,13 +166,14 @@ if __name__ == "__main__":
         input_size = 32 * 3  
         hidden_size = 64
         num_layers = 1
-        output_size = 11
+        output_size = 10
         total_step = len(training_set)
         
         learning_rate = opt.force_learning_rate
 
         model = simpleLSTM(input_size, hidden_size, num_layers, output_size)
         model.to(device)
+        get_n_params(model)
 
         criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
@@ -165,6 +184,7 @@ if __name__ == "__main__":
             for i, (skeleton, label) in enumerate(training_generator):
 
                 skeleton = skeleton.reshape(-1, time_step, input_size).to(device)
+
                 label = label.to(device)
 
                 outputs = model(skeleton)
@@ -190,9 +210,10 @@ if __name__ == "__main__":
                     outputs = model(skeleton_val)
                     _, predicted = torch.max(outputs.data, 2)
                     total += (label_val.size(0) * label_val.size(1))
-                    print(label_val.size())
                     correct += (predicted == label_val).sum().item()
-                    print(predicted.size())
+
+                    loss = criterion(outputs.view(-1, output_size),label_val.view(-1))
+
 
                 
                 print('Test Epoch [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(loss.item())),file=f)

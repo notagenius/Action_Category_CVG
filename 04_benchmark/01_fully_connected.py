@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-
+from torch.nn.modules.module import _addindent
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -18,6 +18,7 @@ import argparse
 import glob
 from tensorboardX import SummaryWriter
 import pandas as pd
+from finalsummy import torch_summarize
 
 
 def parse_command_line():
@@ -217,7 +218,7 @@ if __name__ == "__main__":
 
         max_epochs = opt.max
 
-        csv_path = {'train':"../00_datasets/Julian_data/label_not5/S*.txt", 'val':"../00_datasets/Julian_data/label_5/S*.txt"}
+        csv_path = {'train':"../00_datasets/Weiling_data/label_not5/S*.csv", 'val':"../00_datasets/Weiling_data/label_5/S*.csv"}
         npy_path = {'train':"../00_datasets/Weiling_data/pose_not5/S*.npy",'val':"../00_datasets/Weiling_data/pose_5/S*.npy"}
 
         #csv_path = {'val':"../00_datasets/Weiling_data/label_not5/S*.csv", 'train':"../00_datasets/Weiling_data/label_5/S*.csv"}
@@ -236,7 +237,7 @@ if __name__ == "__main__":
         batch_size = params['batch_size']
         input_size = 32 * 3 
         hidden_size = 512 
-        num_classes = 11
+        num_classes = 10
         total_step = 6693
         
         if opt.net == "FCL":
@@ -260,6 +261,7 @@ if __name__ == "__main__":
 
         best_accu = 0
         for epoch in range(max_epochs):
+            model.train()
             # Training
             i = 0
             for skeleton, label in training_generator:
@@ -285,7 +287,7 @@ if __name__ == "__main__":
                     writer.add_scalar('Train/Loss', loss.item(), global_step=epoch)
                     print('Train Epoch [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(loss.item())),file=f)
                 i = i+1
-
+            model.eval()
             #Validation
             with torch.set_grad_enabled(False):
                 correct = 0

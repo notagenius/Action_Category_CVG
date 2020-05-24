@@ -1,0 +1,3 @@
+if (100 * correct / total > best_accu):     
+
+best_accu = 100 * correct / total

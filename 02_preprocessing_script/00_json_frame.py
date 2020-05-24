@@ -103,6 +103,23 @@ def write_csv(csvfile, in_list, label_set):
 	f.close()
 	return
 
+def write_txt(csvfile, in_list, label_set):
+	diff = int(in_list[-1][3]) - int(read_frame_nr_of_pose3d(csvfile))
+	if csvfile == "S9_greeting_2.csv" or csvfile =="S9_phoning_2.csv" or csvfile =="S9_sittingdown_1.csv" or csvfile =="S9_waiting_1.csv" or csvfile =="S9_walking_2.csv":
+		in_list = cut_label_list(in_list, read_frame_nr_of_pose3d(csvfile))
+	else:
+		in_list[-1][3] = read_frame_nr_of_pose3d(csvfile)
+	f = open(csvfile, "w")
+	for i in in_list:
+		listofzeros = ["0"] * len(label_set)
+		line = i[3] - i[2]
+		for w in range(line):
+			listofzeros[i[1]] = "1"
+			f.write(" ".join(listofzeros))
+			f.write('\n')
+	f.close()
+	return
+
 def swipe_dict(in_dict):
 	return dict((v,k) for k,v in in_dict.items())
 
@@ -156,7 +173,8 @@ for i in pair:
 		filename = "S5_photo_1.csv"
 
 
-	write_csv(filename, test, label_dict)
+	#write_csv(filename, test, label_dict)
+	write_txt(filename, test, label_dict)
 
 
 

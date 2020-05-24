@@ -1,0 +1,5 @@
+Train Epoch [1/200], Loss: 1.4584581851959229
+Train Epoch [1/200], Loss: 1.5206605195999146
+Train Epoch [1/200], Loss: 1.056506872177124
+Train Epoch [1/200], Loss: 1.2096174955368042
+Train Epoch [1/200], Loss: 1.1637784242630005

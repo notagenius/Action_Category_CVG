@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+from finalsummy import torch_summarize
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -19,12 +20,15 @@ import glob
 from tensorboardX import SummaryWriter
 import pandas as pd
 from torchsummary import summary
+from torch.nn.modules.module import _addindent
+
+count = 0
 
 def parse_command_line():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--net', type=str, default='simpleLSTM', help='task to be trained')
-    parser.add_argument('-f', '--file', type=str, default='simpleLSTM', help='tensorboard location')
-    parser.add_argument('-r', '--runs', type=str, default='test/simpleLSTM', help='tensorboard location')
+    parser.add_argument('-n', '--net', type=str, default='finalLSTM_1', help='task to be trained')
+    parser.add_argument('-f', '--file', type=str, default='finalLSTM_1', help='tensorboard location')
+    parser.add_argument('-r', '--runs', type=str, default='final/finalLSTM_1', help='tensorboard location')
     parser.add_argument('-b', '--batchsize', type=int, default=64, help='batchsize')
     parser.add_argument('-m', '--max', type=int, default=200, help='batchsize')
     parser.add_argument('-l', '--force_learning_rate', type=float, default=0.00001, help='setting learning rate')
@@ -70,7 +74,6 @@ class my_dataset(Dataset):
                 self.csv_result.append(tmp_list[-1])
         self.csv_conbined_df = np.concatenate(self.csv_list_of_dfs)
         self.csv_torch_tensor = torch.tensor(self.csv_conbined_df)
-        print(self.csv_result[1])
 
         # npy
         self.npy_filenames = sorted(glob.glob(npy_path_folder))
@@ -130,8 +133,12 @@ if __name__ == "__main__":
 
         max_epochs = opt.max
 
-        csv_path = {'train':"../00_datasets/Julian_data/label_not5/S*.txt", 'val':"../00_datasets/Julian_data/label_5/S*.txt"}
+        #csv_path = {'train':"../00_datasets/Julian_data/label_not5/S*.txt", 'val':"../00_datasets/Julian_data/label_5/S*.txt"}
+        #npy_path = {'train':"../00_datasets/Weiling_data/pose_not5/S*.npy",'val':"../00_datasets/Weiling_data/pose_5/S*.npy"}
+        csv_path = {'train':"../00_datasets/Weiling_data/label_not5/S*.csv", 'val':"../00_datasets/Weiling_data/label_5/S*.csv"}
         npy_path = {'train':"../00_datasets/Weiling_data/pose_not5/S*.npy",'val':"../00_datasets/Weiling_data/pose_5/S*.npy"}
+
+
 
         training_set = my_dataset(csv_path['train'], npy_path['train'], data['Data_hz'],data['Frame_len'])
         training_generator = DataLoader(training_set, **params)
@@ -147,12 +154,13 @@ if __name__ == "__main__":
         input_size = 32 * 3  
         hidden_size = 64
         num_layers = 1
-        output_size = 11
+        output_size = 10
         total_step = len(training_set)
         
         learning_rate = opt.force_learning_rate
 
         model = simpleLSTM(input_size, hidden_size, num_layers, output_size)
+        print(torch_summarize(model))
         model.to(device)
 
 
@@ -161,6 +169,7 @@ if __name__ == "__main__":
         optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 
         sum_done = False
+
         for epoch in range(max_epochs):
             model.train()
             for i, (skeleton, label) in enumerate(training_generator):
@@ -177,8 +186,10 @@ if __name__ == "__main__":
                 optimizer.step()
 
                 if (i+1) % 1000 == 0:
-                    writer.add_scalar('Train/Loss', loss.item(), global_step=epoch)
-                    print('Train Epoch [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(loss.item())),file=f)
+                    count = count + 1000
+
+                    writer.add_scalar('Train/Loss', loss.item(), global_step=count)
+                    print('Train Epoch [{}/{}], Loss: {}'.format(str(i), str(max_epochs), str(loss.item())),file=f)
 
             model.eval()
             with torch.set_grad_enabled(False):
@@ -206,7 +217,7 @@ if __name__ == "__main__":
                 
                 print('Test Epoch [{}/{}], Loss: {}'.format(str(epoch + 1), str(max_epochs), str(loss.item())),file=f)
                 print('Test Accuracy: {}%'.format(100 * correct / total), file=f)
-                PATH = "../model/"+opt.file+"best.pth"
+                PATH = "../modelfinal/"+opt.file+"best.pth"
                 torch.save(model.state_dict(), PATH)
                 writer.add_scalar('Test/Loss', loss.item(), global_step=epoch)
                 writer.add_scalar('Test/Accuracy', 100 * correct / total, epoch)

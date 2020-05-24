@@ -91,7 +91,7 @@ def plot_pts3d(ax, Pts, lcolor='blue', rcolor='red', plot_jid=False, T=np.zeros(
             plot_jid=plot_jid, do_scatter=False, T=T)
 
 
-input_array = np.load("pose3d/S9_smoking_2.npy")
+input_array = np.load("pose3d/S1_directions_1.npy")
 
 input_array = input_array[::5,:,:]
 fig = plt.figure(figsize=(16, 9))
@@ -111,7 +111,7 @@ def my_update(number):
     for i in label_rd:
         if number*5 >= i[1] and number*5 <= i[2]:
             s=i[0]
-    ax.text(0.5, 0.5, 0.5, s, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
+    ax.text(0.9, 0.9, 0.9, s, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, color='black')
     ax.set_xlim([-1, 1])
     ax.set_ylim([-1, 1])
     ax.set_zlim([-1, 1])

@@ -58,7 +58,7 @@ np.random.seed(19680801)
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
-colors = ['r', 'g', 'b', 'm', 'y', 'k', 'w']
+colors = ['r', 'g', 'b', 'm', 'y', 'k', 'p']
 
 yticks = list(map(int, actor))
 
@@ -76,7 +76,7 @@ for c, k in zip(colors, yticks):
     cs = [c] * len(xs)
 
     # Plot the bar graph given by xs and ys on the plane y=k with 80% opacity.
-    ax.bar(xs, ys, zs=k, zdir='y',color = cs, alpha=0.8)
+    ax.bar(xs, ys, zs=k, zdir='y',color = cs, alpha=1)
     
 
 ax.set_xlabel('X')

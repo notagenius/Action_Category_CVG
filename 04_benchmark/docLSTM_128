@@ -1,0 +1,15 @@
+True
+length of input skeleton is:428520 mod of batch size is:40
+length of input label is:428520 mod of batch size is:40
+length of input skeleton is:99079 mod of batch size is:7
+length of input label is:99079 mod of batch size is:7
+simpleLSTM (
+  (lstm): LSTM(96, 128, batch_first=True), weights=((512, 96), (512, 128), (512,), (512,)), parameters=115712
+  (fc): Linear(in_features=128, out_features=10, bias=True), weights=((10, 128), (10,)), parameters=1290
+)
+Validation: head of each epoch
+torch.Size([64, 25, 96])
+torch.Size([64])
+Validation: tail of each epoch
+torch.Size([64, 25, 96])
+torch.Size([64])
