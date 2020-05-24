@@ -1,3 +1,18 @@
+   6332 0
+   6919 1
+    228 2
+  11679 3
+  16131 4
+    756 5
+  94847 6
+  21017 7
+ 171437 8
+ 198253 9
+ 
+ 
+527599
+
+
 ### NOTES
 ![](https://raw.githubusercontent.com/notagenius/Action_Category_CVG/master/model_tips.jpg?token=AGSPNMZSFEZD4NICGXVOBZS57TVYU)
 
