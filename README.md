@@ -1,16 +1,22 @@
-   6332 0
-   6919 1
-    228 2
-  11679 3
-  16131 4
-    756 5
-  94847 6
-  21017 7
- 171437 8
- 198253 9
+### Frames Calculation
+
+Toatal Frames: 527599
+
+| Label | Count |
+| ----- | ----- |
+| 0  | 6332  |
+| 1  | 6919  |
+| 2  | 228   |
+| 3  | 11679 |
+| 4  | 16131 |
+| 5  | 756   |
+| 6  | 94847 |
+| 7  | 21017 |
+| 8  | 171437|
+| 9  | 198253|
  
  
-527599
+
 
 
 ### NOTES
@@ -21,14 +27,14 @@
 
 ### Future Checklist:
 Visulization
-- [ ] Confusion Matrix
-- [ ] Skeleton & Predicted label
+- [x] Confusion Matrix
+- [x] Skeleton & Predicted label
 - [x] Accuracy curve
 
 Model Candidates
 - [x] LSTM / GRU 25 frames * 2 sample rate 
 - [ ] TCN Non Causal largest I can fit, it is fully conventional
-- [ ] TCN Causal 
+- [x] TCN Causal 
 - [ ] Bi-Directional RNN 
 all models take the most simple structure no drop out
 - [x] Fully Connected Layer
